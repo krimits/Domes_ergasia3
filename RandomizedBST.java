@@ -1,14 +1,69 @@
 import java.awt.geom.AffineTransform;
 import java.io.File;
+import java.nio.channels.Pipe.SinkChannel;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Random;
 
 public class RandomizedBST implements TaxEvasionInterface{
-
+    Random random = new Random();
     public RandomizedBST(Comparator<LargeDepositor> comparator) {
         this.comparator = comparator;
+    }
+
+    private class ListNode <T>{
+        T item ;
+        ListNode node ;
+        ListNode nextListNode;
+        public ListNode(T item){
+            this.item = item ; 
+            this.nextListNode = null;
+        }
+        
+        
+    }
+    public class List<T>{
+        ListNode root ; 
+        public List(){
+            this.root = null ; 
+        }
+        
+        public void add(T item){
+            if (this.root == null) { 
+                this.root = new ListNode(item); 
+            }else {
+                ListNode next = root;
+                while (next.nextListNode !=null) {
+                    next = next.nextListNode;
+                }
+                next.nextListNode = new ListNode<T>(item);
+            }
+        }
+
+        public boolean isEmpty(){
+            if(root == null){
+                return true; 
+            }
+            return false;
+        }
+
+        public void printList(){
+            ListNode next = root ; 
+            while(next!=null){
+                System.out.println(next.item);
+                next = next.nextListNode;
+            }
+        }
+    }
+
+
+    private class LastNameComparator implements Comparator<LargeDepositor> {
+        @Override
+        public int compare(LargeDepositor o1, LargeDepositor o2) {
+            return o1.getLastName().compareTo(o2.getLastName());
+        }
     }
     private class AFMComparator implements Comparator<LargeDepositor> {
         @Override
@@ -24,6 +79,7 @@ public class RandomizedBST implements TaxEvasionInterface{
 
         public TreeNode (LargeDepositor item){
             this.item = item;
+
         }
 
         public LargeDepositor getData() {
@@ -53,35 +109,73 @@ public class RandomizedBST implements TaxEvasionInterface{
 
     private TreeNode root;
     private Comparator<LargeDepositor> comparator;
+    private LastNameComparator LastNameComparator;
 
-    @Override
-    public void insert(LargeDepositor item) {
-        if(root == null){
-            root = new TreeNode(item);
+
+    private TreeNode insertRoot(LargeDepositor item , TreeNode n ){
+        if(n == null){
+            return new TreeNode(item);
         }
-        TreeNode current = root;
-
-        while(true){
-            if (current.getData() == item)
-                return;
-
-            if (comparator.compare(current.getData(), item) < 0) {
-                if (current.getRight() == null) {
-                    current.setRight(new TreeNode(item));
-                    return;
-                } else {
-                    current = current.getRight();
-                }
-            } else {
-                if (current.getLeft() == null) {
-                    current.setLeft(new TreeNode(item));
-                    return;
-                } else {
-                    current = current.getLeft();
-                }
-            }
+        if (Math.random()*(n.N+1) < 1.0){
+            return insertT(n,item);
         }
+        if(item.key()< n.item.key()){
+            n.left = insertRoot(item, n.left);
+        }
+        else if (item.key() > n.item.key()){
+            n.right = insertRoot(item, n.right);
+           
+        }
+        n.N ++;
+        return n;
     }
+    private TreeNode insertT(TreeNode h, LargeDepositor item ) {
+        if (h == null)
+            return new TreeNode(item);
+
+        if (item.key() < h.item.key()) {
+            h.left = insertT(h.left, item);
+            h = rotateRight(h); 
+        } else {
+            h.right = insertT(h.right,item);
+            h = rotateLeft(h); 
+        }
+
+        h.N++;
+        return h;
+    }
+
+
+    private TreeNode rotateRight(TreeNode x) {
+        TreeNode y = x.left;
+        x.left = y.right;
+        y.right = x;
+        updateSize(x); 
+        return y;
+    }
+
+    private TreeNode rotateLeft(TreeNode y) {
+        TreeNode x = y.right;
+        y.right = x.left;
+        x.left = y;
+        updateSize(y); 
+        return x;
+    }
+
+    private void updateSize(TreeNode node) {
+        node.N = size(node.left) + size(node.right) ;
+    }
+
+    private int size(TreeNode node) {
+        return node != null ? node.N : 0;
+    }
+    
+    @Override
+    public void insert(LargeDepositor item){
+        this.root = insertRoot(item, root);
+    }
+
+    
 
     @Override
     public void load(String filename) {
@@ -125,6 +219,7 @@ public class RandomizedBST implements TaxEvasionInterface{
             System.out.println("Depositor didnt found");
             return;
         }
+
         searchingdDepositor.setSavings(savings);
     }
 
@@ -147,26 +242,28 @@ public class RandomizedBST implements TaxEvasionInterface{
         return null;
     }
     @Override
-public List<LargeDepositor> searchByLastName(String lastName) {
-    List<LargeDepositor> depositors = new ArrayList<>();
-    searchByLastNameHelper(root, lastName, depositors);
-    if (depositors.isEmpty()) {
-        System.out.println("The item does not exist");
+    public List<LargeDepositor> searchByLastName(String lastName) {
+        Comparator<LargeDepositor> lastNameComparator = new LastNameComparator();
+        List<LargeDepositor> depositors = new List<>();//Change implementation with my own 
+        searchByLastNameHelper(root, lastName, depositors);
+        if (depositors.isEmpty()) {
+            System.out.println("The item does not exist");
+        }
+        return depositors;
     }
-    return depositors;
-}
 
-private void searchByLastNameHelper(TreeNode node, String lastName, List<LargeDepositor> depositors) {
-    if (node == null) {
-        return;
+    private void searchByLastNameHelper(TreeNode node, String lastName, List<LargeDepositor> depositors) {
+        if (node == null) {
+            return;
+        }
+        LastNameComparator lastNameComparator = new LastNameComparator();
+        int comparison = lastNameComparator.compare(node.getData(), new LargeDepositor(0, "", lastName, 0.0, 0.0));
+        if (comparison == 0) {
+            depositors.add(node.getData());
+        }
+        searchByLastNameHelper(node.getLeft(), lastName, depositors);
+        searchByLastNameHelper(node.getRight(), lastName, depositors);
     }
-    int comparison = comparator.compare(node.getData(), new LargeDepositor(0, lastName, "", 0.0, 0.0));
-    if (comparison == 0) {
-        depositors.add(node.getData());
-    }
-    searchByLastNameHelper(node.getLeft(), lastName, depositors);
-    searchByLastNameHelper(node.getRight(), lastName, depositors);
-}
     @Override
     public void remove(int AFM) {
         TreeNode current = root;
@@ -245,16 +342,16 @@ private void searchByLastNameHelper(TreeNode node, String lastName, List<LargeDe
     }
 
     
-    // Removed @Override annotation
+ @Override 
 public void printTopLargeDepositors(int k) {
-    List<LargeDepositor> topDepositors = new ArrayList<>();
+    java.util.List<LargeDepositor> topDepositors = new ArrayList<>();
     getTopDepositors(root, topDepositors, k);
     for (LargeDepositor depositor : topDepositors) {
         System.out.println(depositor);
     }
 }
 
-private void getTopDepositors(TreeNode node, List<LargeDepositor> topDepositors, int k) {
+private void getTopDepositors(TreeNode node, java.util.List<LargeDepositor> topDepositors, int k) {
     if (node == null || topDepositors.size() >= k) {
         return;
     }
@@ -297,7 +394,7 @@ private void getTopDepositors(TreeNode node, List<LargeDepositor> topDepositors,
         while (running) {
             printMenu();
         int input = scanner.nextInt();
-        if (input == 1){
+        if (input == 1){ 
             System.out.println("AFM Depositor");
             int afm = scanner.nextInt();
             System.out.println("Name of Depositor");
@@ -322,11 +419,14 @@ private void getTopDepositors(TreeNode node, List<LargeDepositor> topDepositors,
         }
         else if( input == 4){
             System.out.println("Type Depositor's AFM");
-            myTree.searchByAFM(scanner.nextInt());
+            LargeDepositor result =myTree.searchByAFM(scanner.nextInt());
+            System.out.println(result);
         }
         else if( input == 5){
             System.out.println("Type Depositor's last name");
-            myTree.searchByLastName(scanner.nextLine());
+            String last_name = scanner.next();
+            List<LargeDepositor> results =myTree.searchByLastName(last_name);
+            results.printList();
         }
         else if( input == 6){
             System.out.println("Type the AFM of the Depositor you want to remove");
@@ -351,5 +451,6 @@ private void getTopDepositors(TreeNode node, List<LargeDepositor> topDepositors,
         }
         scanner.close();
     }
+
     
 }
