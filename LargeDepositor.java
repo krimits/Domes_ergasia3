@@ -7,7 +7,7 @@ public class LargeDepositor {
 
 
     public LargeDepositor(int afm, String firstName, String lastName, double savings, double taxedIncomes) {
-        AFM = afm;
+        this.AFM = afm;
         this.firstName = firstName;
         this.lastName = lastName;
         this.savings = savings;
